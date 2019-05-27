@@ -1,0 +1,39 @@
+#!/usr/bin/env bash
+
+# this is licensed under the unlicense, yo
+# do whatever you want (except illegal stuff, but i won't stop you)
+
+function checkinstalled() {
+    zypper --no-refresh info $1 | grep -i installed | grep -i yes >/dev/null 2>/dev/null && return 0
+    echo "'$1' not found in installed packages."
+    exit 1
+}
+function checkautoinstalled() {
+    cat /var/lib/zypp/AutoInstalled | grep -i $1 >/dev/null 2>/dev/null && return 0
+    return 1
+}
+case $1 in
+    asdep|ad)
+        shift
+        checkinstalled $1
+        if checkautoinstalled $1; then
+            echo "This package is already marked as a dependency."
+            return 0
+        else
+            sudo sed -i "\$a$1" /var/lib/zypp/AutoInstalled
+        fi
+        ;;
+    asinstalled|ai)
+        shift
+        checkinstalled $1
+        if checkautoinstalled $1; then
+            sudo sed -i "/^$1\b$/d" /var/lib/zypp/AutoInstalled
+        else
+            echo "This package is already manually installed."
+            return 0
+        fi
+        ;;
+    *)
+        
+        ;;
+esac
